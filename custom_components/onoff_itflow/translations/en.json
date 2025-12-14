@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name",
+          "integration_mode": "Integration Mode"
+        },
+        "data_description": {
+          "name": "Name to identify this OnOff Support Agent instance",
+          "integration_mode": "Choose integration mode: Full (automated monitoring + tickets) or Manual (tickets only)"
+        },
+        "title": "Add OnOff Support Agent"
+      },
+      "itflow": {
+        "data": {
+          "itflow_api_key": "API Key",
+          "itflow_client_id": "Client ID",
+          "public_url": "Public Home Assistant URL (Optional)"
+        },
+        "data_description": {
+          "itflow_api_key": "Your OnOff Support Agent API key",
+          "itflow_client_id": "The client ID for this installation",
+          "public_url": "Public URL for accessing Home Assistant"
+        },
+        "title": "Configure OnOff Support Agent"
+      },
+      "automation_options": {
+        "data": {
+          "create_startup_ticket": "Create ticket on restart",
+          "alert_on_errors": "Alert on errors",
+          "alert_on_new_update": "Alert on new HA update",
+          "alert_on_automation_failure": "Alert on automation failures",
+          "alert_on_error_logs": "Alert on error logs",
+          "alert_on_backup_failure": "Alert on backup failures",
+          "health_report_enabled": "Enable automated health reports",
+          "health_report_frequency": "Health report frequency"
+        },
+        "data_description": {
+          "create_startup_ticket": "Create a support ticket when Home Assistant restarts",
+          "alert_on_errors": "Automatically create tickets when errors occur",
+          "alert_on_new_update": "Create a ticket when a new Home Assistant update is available",
+          "alert_on_automation_failure": "Create a ticket when an automation fails",
+          "alert_on_error_logs": "Create a ticket for error entries in the log",
+          "alert_on_backup_failure": "Create a ticket when a backup fails",
+          "health_report_enabled": "Send automated comprehensive health reports as tickets",
+          "health_report_frequency": "How often to send health reports (daily or weekly)"
+        },
+        "title": "Automation & Alerts"
+      },
+      "monitoring_options": {
+        "data": {
+          "monitor_disk": "Monitor Disk Usage",
+          "disk_threshold": "Disk Alert Threshold (%)",
+          "monitor_memory": "Monitor Memory Usage",
+          "memory_threshold": "Memory Alert Threshold (%)",
+          "monitor_cpu": "Monitor CPU Usage",
+          "cpu_threshold": "CPU Alert Threshold (%)",
+          "monitor_ip": "Monitor IP Changes",
+          "gateway_ip": "Gateway IP (for ping)",
+          "cf_tunnel_enabled": "Monitor Cloudflare Tunnel",
+          "cf_tunnel_ip": "Cloudflare Tunnel IP"
+        },
+        "data_description": {
+          "monitor_disk": "Enable disk usage monitoring",
+          "disk_threshold": "Alert when disk usage exceeds this percentage",
+          "monitor_memory": "Enable memory usage monitoring",
+          "memory_threshold": "Alert when memory usage exceeds this percentage",
+          "monitor_cpu": "Enable CPU usage monitoring",
+          "cpu_threshold": "Alert when CPU usage exceeds this percentage",
+          "monitor_ip": "Monitor for IP address changes",
+          "gateway_ip": "IP address of your router/gateway for ping monitoring",
+          "cf_tunnel_enabled": "Monitor Cloudflare Tunnel connectivity",
+          "cf_tunnel_ip": "IP address or hostname of your Cloudflare Tunnel"
+        },
+        "data_description": {
+          "monitor_disk": "Enable disk usage monitoring",
+          "disk_threshold": "Alert when disk usage exceeds this percentage",
+          "monitor_memory": "Enable memory usage monitoring",
+          "memory_threshold": "Alert when memory usage exceeds this percentage",
+          "monitor_cpu": "Enable CPU usage monitoring",
+          "cpu_threshold": "Alert when CPU usage exceeds this percentage",
+          "monitor_ip": "Monitor for IP address changes",
+          "gateway_ip": "IP address of your router/gateway for ping monitoring",
+          "cf_tunnel_enabled": "Monitor Cloudflare Tunnel connectivity",
+          "cf_tunnel_ip": "IP address or hostname of your Cloudflare Tunnel"
+        },
+        "title": "System Monitoring"
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to OnOff Support Agent server",
+      "invalid_pin": "PIN must be exactly 4 digits",
+      "no_clients_found": "No clients found in your account"
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single configuration of OnOff Support Agent is allowed.",
+      "reconfigure_failed": "Reconfiguration failed"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {}
+      }
+    }
+  }
+}

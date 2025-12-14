@@ -1,0 +1,7 @@
+{
+  "name": "Onoff ITFlow Home Assistant Integration",
+  "zip_release": true,
+  "filename": "onoff_itflow.zip",
+  "homeassistant": "2023.8.0",
+  "render_readme": true
+}

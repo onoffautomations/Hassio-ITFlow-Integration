@@ -1,0 +1,209 @@
+create_ticket:
+  name: Create Support Ticket
+  description: Create a support ticket
+  fields:
+    ticket_subject:
+      name: Subject
+      description: The subject/title of the ticket
+      required: true
+      example: "System Error Detected"
+      selector:
+        text:
+    ticket_details:
+      name: Details
+      description: Detailed description of the issue
+      required: true
+      example: "Error occurred in automation xyz at 10:00 AM"
+      selector:
+        text:
+          multiline: true
+    ticket_priority:
+      name: Priority
+      description: Priority level of the ticket
+      required: false
+      default: "Low"
+      example: "Medium"
+      selector:
+        select:
+          options:
+            - "Low"
+            - "Medium"
+            - "High"
+    email:
+      name: Email
+      description: Contact email address (optional)
+      required: false
+      example: "user@example.com"
+      selector:
+        text:
+          type: email
+    phone:
+      name: Phone
+      description: Contact phone number (optional)
+      required: false
+      example: "+1234567890"
+      selector:
+        text:
+          type: tel
+    contact_id:
+      name: Contact ID
+      description: ITFlow contact ID to associate with this ticket (optional - defaults to 'HA API' contact). Use the 'get_contacts' service to see available contacts and their IDs.
+      required: false
+      example: "123"
+      selector:
+        number:
+          min: 1
+          mode: box
+
+create_asset:
+  name: Create Asset
+  description: Register a new asset in the support system
+  fields:
+    asset_name:
+      name: Asset Name
+      description: Name of the asset
+      required: true
+      example: "Server Room - Dell PowerEdge"
+      selector:
+        text:
+    asset_type:
+      name: Asset Type
+      description: Type of asset
+      required: true
+      example: "Server"
+      selector:
+        select:
+          options:
+            - "Server"
+            - "Workstation"
+            - "Laptop"
+            - "Desktop"
+            - "Printer"
+            - "Network Switch"
+            - "Router"
+            - "Firewall"
+            - "Access Point"
+            - "Camera"
+            - "Phone"
+            - "Tablet"
+            - "Other"
+    asset_make:
+      name: Make
+      description: Manufacturer of the asset
+      required: false
+      example: "Dell"
+      selector:
+        text:
+    asset_model:
+      name: Model
+      description: Model number or name
+      required: false
+      example: "PowerEdge R740"
+      selector:
+        text:
+    asset_serial:
+      name: Serial Number
+      description: Serial number of the asset
+      required: false
+      example: "ABC123456"
+      selector:
+        text:
+    asset_os:
+      name: Operating System
+      description: Operating system installed
+      required: false
+      example: "Ubuntu 22.04"
+      selector:
+        text:
+    asset_ip:
+      name: IP Address
+      description: IP address of the asset
+      required: false
+      example: "192.168.1.100"
+      selector:
+        text:
+    asset_mac:
+      name: MAC Address
+      description: MAC address of the asset
+      required: false
+      example: "00:11:22:33:44:55"
+      selector:
+        text:
+    asset_purchase:
+      name: Purchase Date
+      description: Date the asset was purchased
+      required: false
+      example: "2023-01-15"
+      selector:
+        date:
+    asset_warranty_expire:
+      name: Warranty Expiration
+      description: Date the warranty expires
+      required: false
+      example: "2026-01-15"
+      selector:
+        date:
+    asset_install_date:
+      name: Install Date
+      description: Date the asset was installed
+      required: false
+      example: "2023-02-01"
+      selector:
+        date:
+    asset_notes:
+      name: Notes
+      description: Additional notes about the asset
+      required: false
+      example: "Located in server room rack 3"
+      selector:
+        text:
+          multiline: true
+
+reply_to_ticket:
+  name: Reply to Ticket
+  description: Add a reply/note to an existing support ticket
+  fields:
+    ticket_id:
+      name: Ticket ID
+      description: The ID or number of the ticket to reply to
+      required: true
+      example: "123"
+      selector:
+        text:
+    reply_text:
+      name: Reply Text
+      description: Your reply message
+      required: true
+      example: "Thank you for the update. I have tested the fix and it works perfectly."
+      selector:
+        text:
+          multiline: true
+
+send_health_report:
+  name: Send Health Report
+  description: Send a comprehensive health report ticket to support
+  fields:
+    include_integration_list:
+      name: Include Integration List
+      description: Include full list of integrations in the report
+      required: false
+      default: false
+      selector:
+        boolean:
+
+send_backup_check_report:
+  name: Send Backup Check Report
+  description: Send a backup status report including local, cloud, and Google Drive backups
+  fields:
+    force_send:
+      name: Force Send
+      description: Force send even if backups are healthy
+      required: false
+      default: false
+      selector:
+        boolean:
+
+get_contacts:
+  name: Get Contacts
+  description: Retrieve all contacts from ITFlow and display them in the logs. Use this to find contact IDs for creating tickets with specific contacts.
+  fields: {}

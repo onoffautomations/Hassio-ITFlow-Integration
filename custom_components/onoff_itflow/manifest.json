@@ -1,0 +1,14 @@
+{
+  "domain": "onoff_itflow",
+  "name": "OnOff Support Agent",
+  "codeowners": ["@onoff_itflow"],
+  "config_flow": true,
+  "documentation": "https://onoffautomations.com.com",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "after_dependencies": [],
+  "loggers": [],
+  "quality_scale": "bronze",
+  "requirements": ["aiohttp>=3.8.0"],
+  "version": "1.2.0"
+}

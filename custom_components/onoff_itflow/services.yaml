@@ -54,6 +54,15 @@ create_ticket:
         number:
           min: 1
           mode: box
+    assigned_to:
+      name: Assigned To
+      description: User ID to assign this ticket to (optional - leave blank for unassigned)
+      required: false
+      example: "4"
+      selector:
+        number:
+          min: 1
+          mode: box
 
 create_asset:
   name: Create Asset

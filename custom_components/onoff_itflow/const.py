@@ -55,11 +55,14 @@ TICKET_STATUS_MAP = {
     "2": "Open",
     "3": "On Hold",
     "4": "Resolved",
+    "5": "Closed",
+    "7": "Maintenance",
     "New": "New",
     "Open": "Open",
     "On Hold": "On Hold",
     "Resolved": "Resolved",
     "Closed": "Closed",
+    "Maintenance": "Maintenance",
 }
 
 def map_ticket_status(status):
@@ -70,8 +73,11 @@ def map_ticket_status(status):
     # If it's exactly 5, it's Closed
     if status_str == "5":
         return "Closed"
-    # If it's a number higher than 5
-    if status_str.isdigit() and int(status_str) > 5:
+    # If it's exactly 7, it's Maintenance
+    if status_str == "7":
+        return "Maintenance"
+    # If it's a number higher than 7
+    if status_str.isdigit() and int(status_str) > 7:
         return "Waiting..."
     return TICKET_STATUS_MAP.get(status_str, status_str)
 

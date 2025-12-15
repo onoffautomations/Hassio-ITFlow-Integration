@@ -296,7 +296,10 @@ class ITFlowClient:
         priority: str = "Low",
         contact_id: int | None = None,
         asset_id: int | None = None,
-        category: str | None = None
+        category: str | None = None,
+        category_id: int | None = None,
+        status: str | None = None,
+        assigned_to: int | None = None
     ) -> dict[str, Any]:
         """Create a ticket in ITFlow.
 
@@ -306,7 +309,10 @@ class ITFlowClient:
             priority: Ticket priority (Low, Medium, High)
             contact_id: Associated contact ID
             asset_id: Associated asset ID
-            category: Ticket category
+            category: Ticket category name (deprecated, use category_id)
+            category_id: Ticket category ID (preferred over category)
+            status: Ticket status (New, Open, On Hold, Resolved, Closed, Maintenance/7)
+            assigned_to: User ID to assign ticket to
 
         Returns:
             API response
@@ -322,8 +328,15 @@ class ITFlowClient:
             data["ticket_contact_id"] = contact_id
         if asset_id:
             data["asset_id"] = asset_id
-        if category:
+        # Prefer category_id over category name
+        if category_id:
+            data["ticket_category_id"] = category_id
+        elif category:
             data["ticket_category"] = category
+        if status:
+            data["ticket_status"] = status
+        if assigned_to:
+            data["ticket_assigned_to"] = assigned_to
 
         return await self._request("/tickets/create.php", "POST", data)
 

@@ -610,7 +610,9 @@ async def setup_itflow(hass: HomeAssistant, entry: ConfigEntry):
                     priority="Medium",
                     contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
                     asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
-                    category="HA API"
+                    category_id=41,
+                    status="7",
+                    assigned_to=4
                 )
                 # Mark as created
                 new_data = dict(entry.data)
@@ -694,7 +696,9 @@ async def setup_itflow(hass: HomeAssistant, entry: ConfigEntry):
                     priority="Low",
                     contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
                     asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
-                    category="System Alert"
+                    category_id=41,
+                    status="7",
+                    assigned_to=4
                 )
 
                 if response.get("success"):
@@ -817,7 +821,9 @@ async def setup_itflow(hass: HomeAssistant, entry: ConfigEntry):
                     priority="Low",
                     contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
                     asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
-                    category="Installation"
+                    category_id=41,
+                    status="7",
+                    assigned_to=4
                 )
 
                 if response.get("success"):
@@ -844,7 +850,7 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
     error_cooldown = timedelta(minutes=30)  # Don't create duplicate tickets within 30 minutes
 
     async def handle_system_log_event(event_data):
-        """Listen for system_log events (ERROR and WARNING levels) and create tickets."""
+        """Listen for system_log events (ERROR, WARNING, and CRITICAL levels) and create tickets."""
         try:
             # Get event data
             level = event_data.data.get("level")
@@ -852,9 +858,14 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
             timestamp = event_data.data.get("timestamp")
             logger_name = event_data.data.get("name", "Unknown")
             exception = event_data.data.get("exception", "")
+            source = event_data.data.get("source", ["Unknown"])[0] if isinstance(event_data.data.get("source"), list) else event_data.data.get("source", "Unknown")
 
-            # Only process ERROR and WARNING levels
-            if level not in ["ERROR", "WARNING"]:
+            # Only process ERROR, WARNING, and CRITICAL levels
+            if level not in ["ERROR", "WARNING", "CRITICAL"]:
+                return
+
+            # Skip errors from this integration to avoid infinite loops
+            if DOMAIN in logger_name:
                 return
 
             # Create a hash of the message to detect duplicates
@@ -883,13 +894,24 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
             # Format timestamp
             event_time = datetime.now().strftime("%m/%d/%Y at %I:%M %p")
 
-            # Determine severity
-            severity_color = "#f44336" if level == "ERROR" else "#ff9800"
-            severity_bg = "#ffebee" if level == "ERROR" else "#fff3e0"
-            severity_icon = "🔴" if level == "ERROR" else "🟠"
-            priority = "High" if level == "ERROR" else "Medium"
+            # Determine severity based on level
+            if level == "CRITICAL":
+                severity_color = "#b71c1c"
+                severity_bg = "#ffcdd2"
+                severity_icon = "🔴"
+                priority = "High"
+            elif level == "ERROR":
+                severity_color = "#f44336"
+                severity_bg = "#ffebee"
+                severity_icon = "🟠"
+                priority = "High"
+            else:  # WARNING
+                severity_color = "#ff9800"
+                severity_bg = "#fff3e0"
+                severity_icon = "⚠️"
+                priority = "Medium"
 
-            # Create ticket with nice HTML
+            # Create ticket with enhanced HTML formatting
             ticket_details = f"""<div style="font-family: Arial, sans-serif; line-height: 1.6;">
 <h2 style="color: {severity_color}; border-bottom: 2px solid {severity_color}; padding-bottom: 10px;">{severity_icon} System {level.title()} Detected</h2>
 
@@ -905,16 +927,20 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
             <td style="padding: 8px;"><span style="background-color: {severity_color}; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold;">{level}</span></td>
         </tr>
         <tr>
+            <td style="padding: 8px; font-weight: bold;">Logger:</td>
+            <td style="padding: 8px;"><code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 3px;">{logger_name}</code></td>
+        </tr>
+        <tr>
             <td style="padding: 8px; font-weight: bold;">Source:</td>
-            <td style="padding: 8px;"><code>{logger_name}</code></td>
+            <td style="padding: 8px;"><code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 3px;">{source}</code></td>
         </tr>
     </table>
 </div>
 
 <div style="background-color: #f5f5f5; border-left: 4px solid #757575; padding: 15px; margin: 15px 0;">
     <h3 style="margin-top: 0; color: #424242;">📝 Error Message</h3>
-    <div style="background-color: #fff; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px; overflow-x: auto;">
-        {message}
+    <div style="background-color: #fff; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">
+{message}
     </div>
 </div>"""
 
@@ -923,8 +949,16 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
 <div style="background-color: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 15px 0;">
     <h3 style="margin-top: 0; color: #c62828;">🐛 Stack Trace</h3>
     <div style="background-color: #fff; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto; max-height: 300px; overflow-y: auto;">
-        <pre style="margin: 0; white-space: pre-wrap;">{exception}</pre>
+        <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">{exception}</pre>
     </div>
+</div>"""
+
+            # Add timestamp details if available
+            if timestamp:
+                ticket_details += f"""
+<div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin: 15px 0;">
+    <h3 style="margin-top: 0; color: #2e7d32;">🕐 Timestamp Information</h3>
+    <p style="margin: 0; font-family: monospace; background-color: #fff; padding: 8px; border-radius: 4px;">{timestamp}</p>
 </div>"""
 
             ticket_details += f"""
@@ -932,24 +966,27 @@ def setup_error_monitoring(hass: HomeAssistant, entry: ConfigEntry):
     <h3 style="margin-top: 0; color: #1565c0;">💡 Recommended Actions</h3>
     <ul style="margin: 10px 0 0 0; padding-left: 20px;">
         <li>Review the error message and stack trace above</li>
-        <li>Check Home Assistant logs for additional context</li>
-        <li>Verify affected integration or automation is working</li>
-        <li>Check for recent configuration changes</li>
+        <li>Check Home Assistant logs for additional context: <code>/config/home-assistant.log</code></li>
+        <li>Verify affected integration or automation is working correctly</li>
+        <li>Check for recent configuration changes that may have caused this</li>
+        <li>Search for similar errors in Home Assistant forums and GitHub issues</li>
     </ul>
 </div>
 {get_ticket_footer(hass, entry)}
 </div>"""
 
             await client.create_ticket(
-                subject=f"{severity_icon} {level}: {message[:60]}",
+                subject=f"{severity_icon} {level}: {logger_name} - {message[:50]}",
                 details=ticket_details,
                 priority=priority,
                 contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
                 asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
-                category="System Alert"
+                category_id=41,
+                status="7",
+                assigned_to=4
             )
 
-            _LOGGER.info("Created ticket for system %s: %s", level.lower(), message[:50])
+            _LOGGER.info("Created ticket for system %s: %s - %s", level.lower(), logger_name, message[:50])
 
         except Exception as err:
             _LOGGER.error("Error in system log listener: %s", err, exc_info=True)
@@ -1234,7 +1271,9 @@ def setup_system_monitoring(hass: HomeAssistant, entry: ConfigEntry):
                             priority="High",
                             contact_id=contact_id,
                             asset_id=asset_id,
-                            category="System Monitor"
+                            category_id=41,
+                            status="7",
+                            assigned_to=4
                         )
                         last_alerts["disk"] = now
                         # Store ticket ID for auto-closing
@@ -1312,7 +1351,9 @@ def setup_system_monitoring(hass: HomeAssistant, entry: ConfigEntry):
                             priority="High",
                             contact_id=contact_id,
                             asset_id=asset_id,
-                            category="System Monitor"
+                            category_id=41,
+                            status="7",
+                            assigned_to=4
                         )
                         last_alerts["memory"] = now
                         # Store ticket ID for auto-closing
@@ -1373,7 +1414,9 @@ def setup_system_monitoring(hass: HomeAssistant, entry: ConfigEntry):
                             priority="High",
                             contact_id=contact_id,
                             asset_id=asset_id,
-                            category="System Monitor"
+                            category_id=41,
+                            status="7",
+                            assigned_to=4
                         )
                         last_alerts["cpu"] = now
                         # Store ticket ID for auto-closing
@@ -1434,7 +1477,9 @@ def setup_system_monitoring(hass: HomeAssistant, entry: ConfigEntry):
                             priority="Medium",
                             contact_id=contact_id,
                             asset_id=asset_id,
-                            category="System Monitor"
+                            category_id=41,
+                            status="7",
+                            assigned_to=4
                         )
                         _LOGGER.info("Created ticket for local IP change: %s -> %s", last_ip["local"], current_local_ip)
                     last_ip["local"] = current_local_ip
@@ -1486,7 +1531,9 @@ def setup_system_monitoring(hass: HomeAssistant, entry: ConfigEntry):
                                 priority="Medium",
                                 contact_id=contact_id,
                                 asset_id=asset_id,
-                                category="System Monitor"
+                                category_id=41,
+                                status="7",
+                                assigned_to=4
                             )
                             _LOGGER.info("Created ticket for public IP change: %s -> %s", last_ip["public"], public_ip)
                         last_ip["public"] = public_ip
@@ -1520,7 +1567,9 @@ This may indicate internet connectivity issues.
                         priority="High",
                         contact_id=contact_id,
                         asset_id=asset_id,
-                        category="Network Monitor"
+                        category_id=41,
+                        status="7",
+                        assigned_to=4
                     )
                     last_alerts["ping_8888"] = now
                     # Store ticket ID for auto-closing
@@ -1589,7 +1638,9 @@ The system is now operational.
                 priority="Low",
                 contact_id=contact_id,
                 asset_id=asset_id,
-                category="System Events"
+                category_id=41,
+                status="7",
+                assigned_to=4
             )
             _LOGGER.info("Created ticket for HA restart")
 
@@ -1691,7 +1742,12 @@ The system is now operational.
                     await client.create_ticket(
                         subject=ticket_subject,
                         details=ticket_details,
-                        priority="Medium"
+                        priority="Medium",
+                        contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
+                        asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
+                        category_id=41,
+                        status="7",
+                        assigned_to=4
                     )
                     _LOGGER.info("Created ticket for automation failure: %s", automation_entity_id)
             except Exception as err:
@@ -1702,9 +1758,10 @@ The system is now operational.
 
     if entry.data.get(CONF_ALERT_ON_ERROR_LOGS):
         async def error_log_listener(event):
-            """Listen for error logs and create tickets."""
+            """Listen for warning, error, and critical logs and create tickets."""
             try:
-                if event.data.get("level") in ["ERROR", "CRITICAL"]:
+                level = event.data.get("level", "")
+                if level in ["WARNING", "ERROR", "CRITICAL"]:
                     message = event.data.get("message", "Unknown error")
                     logger_name = event.data.get("name", "Unknown")
 
@@ -1714,11 +1771,21 @@ The system is now operational.
 
                     client = hass.data[DOMAIN][entry.entry_id].get("itflow_client")
                     if client:
-                        level = event.data.get("level", "ERROR")
-                        level_color = "#d32f2f" if level == "CRITICAL" else "#f57c00"
-                        level_icon = "🔴" if level == "CRITICAL" else "🟠"
+                        # Set colors, icons, and priorities based on log level
+                        if level == "CRITICAL":
+                            level_color = "#d32f2f"
+                            level_icon = "🔴"
+                            priority = "High"
+                        elif level == "ERROR":
+                            level_color = "#f57c00"
+                            level_icon = "🟠"
+                            priority = "High"
+                        else:  # WARNING
+                            level_color = "#ff9800"
+                            level_icon = "⚠️"
+                            priority = "Medium"
 
-                        ticket_subject = f"{level_icon} HA Error Log: {logger_name}"
+                        ticket_subject = f"{level_icon} HA {level}: {logger_name}"
                         ticket_details = f"""<div style="font-family: Arial, sans-serif; line-height: 1.6;">
 <h2 style="color: {level_color}; border-bottom: 2px solid {level_color}; padding-bottom: 10px;">Error Log Entry Detected</h2>
 
@@ -1757,9 +1824,14 @@ The system is now operational.
                         await client.create_ticket(
                             subject=ticket_subject,
                             details=ticket_details,
-                            priority="High"
+                            priority=priority,
+                            contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
+                            asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
+                            category_id=41,
+                            status="7",
+                            assigned_to=4
                         )
-                        _LOGGER.info("Created ticket for error log: %s", logger_name)
+                        _LOGGER.info("Created ticket for %s log: %s", level.lower(), logger_name)
             except Exception as err:
                 _LOGGER.error("Error creating ticket for error log: %s", err)
 
@@ -1840,7 +1912,12 @@ The system is now operational.
                                 await client.create_ticket(
                                     subject=ticket_subject,
                                     details=ticket_details,
-                                    priority="Low"
+                                    priority="Low",
+                                    contact_id=hass.data[DOMAIN][entry.entry_id].get("itflow_contact_id"),
+                                    asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
+                                    category_id=41,
+                                    status="7",
+                                    assigned_to=4
                                 )
                                 _LOGGER.info("Created ticket for new HA update: %s", latest_version)
 
@@ -2004,6 +2081,7 @@ def register_services(hass: HomeAssistant, entry: ConfigEntry):
         email = call.data.get("email")
         phone = call.data.get("phone")
         contact_id = call.data.get("contact_id")
+        assigned_to = call.data.get("assigned_to")
 
         # Get logged-in user from context
         user_name = "Unknown User"
@@ -2076,7 +2154,8 @@ def register_services(hass: HomeAssistant, entry: ConfigEntry):
                 priority=priority,
                 contact_id=final_contact_id,
                 asset_id=hass.data[DOMAIN][entry.entry_id].get("itflow_asset_id"),
-                category="HA API"
+                category="HA API",
+                assigned_to=assigned_to
             )
 
             if response.get("success"):
@@ -2097,6 +2176,7 @@ def register_services(hass: HomeAssistant, entry: ConfigEntry):
             vol.Optional("email"): cv.string,
             vol.Optional("phone"): cv.string,
             vol.Optional("contact_id"): cv.positive_int,
+            vol.Optional("assigned_to"): cv.positive_int,
         })
     )
 
@@ -2807,7 +2887,12 @@ def register_services(hass: HomeAssistant, entry: ConfigEntry):
             response = await client.create_ticket(
                 subject=ticket_subject,
                 details=ticket_details,
-                priority="Medium" if backup_issues else "Low"
+                priority="Medium" if backup_issues else "Low",
+                contact_id=hass.data[DOMAIN][active_entry.entry_id].get("itflow_contact_id"),
+                asset_id=hass.data[DOMAIN][active_entry.entry_id].get("itflow_asset_id"),
+                category_id=41,
+                status="7",
+                assigned_to=4
             )
 
             if response.get("success"):

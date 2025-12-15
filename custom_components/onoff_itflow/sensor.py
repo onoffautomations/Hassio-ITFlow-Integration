@@ -83,6 +83,10 @@ def build_ticket_attributes_with_size_check(tickets, include_tickets_array=False
                     "ticket_status": friendly_status,
                     "created": ticket.get("ticket_created_at", ""),
                     "details": ticket.get("ticket_details", "")[:100],
+                    "category": ticket.get("ticket_category", ""),
+                    "ticket_category": ticket.get("ticket_category", ""),
+                    "assigned_to": ticket.get("ticket_assigned_to", ""),
+                    "ticket_assigned_to": ticket.get("ticket_assigned_to", ""),
                 })
             attributes["tickets"] = tickets_array
 
@@ -99,6 +103,8 @@ def build_ticket_attributes_with_size_check(tickets, include_tickets_array=False
             attributes[f"ticket_{idx + 1}_status_raw"] = raw_status
             attributes[f"ticket_{idx + 1}_created"] = ticket.get("ticket_created_at", "")
             attributes[f"ticket_{idx + 1}_details"] = ticket.get("ticket_details", "")[:100]
+            attributes[f"ticket_{idx + 1}_category"] = ticket.get("ticket_category", "")
+            attributes[f"ticket_{idx + 1}_assigned_to"] = ticket.get("ticket_assigned_to", "")
 
         attributes["total_tickets"] = len(tickets)
         attributes["displayed_tickets"] = len(limited_tickets)
@@ -132,6 +138,7 @@ async def async_setup_entry(
         ITFlowOpenTicketsSensor(hass, entry.entry_id, title),
         ITFlowResolvedTicketsSensor(hass, entry.entry_id, title),
         ITFlowClosedTicketsSensor(hass, entry.entry_id, title),
+        ITFlowMaintenanceTicketsSensor(hass, entry.entry_id, title),
         ITFlowContactsSensor(hass, entry.entry_id, title),
     ])
 
@@ -1511,7 +1518,7 @@ class ITFlowOpenTicketsSensor(SensorEntity, RestoreEntity):
     @property
     def extra_state_attributes(self):
         """Return ticket details as attributes with dynamic size reduction."""
-        return build_ticket_attributes_with_size_check(self._tickets, include_tickets_array=True)
+        return build_ticket_attributes_with_size_check(self._tickets, include_tickets_array=False)
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -1684,6 +1691,8 @@ class ITFlowResolvedTicketsSensor(SensorEntity, RestoreEntity):
             attributes[f"ticket_{idx + 1}_created"] = ticket.get("ticket_created_at", "")
             attributes[f"ticket_{idx + 1}_resolved"] = ticket.get("ticket_resolved_at", "")
             attributes[f"ticket_{idx + 1}_details"] = ticket.get("ticket_details", "")[:100]  # Reduced from 200 to 100
+            attributes[f"ticket_{idx + 1}_category"] = ticket.get("ticket_category", "")
+            attributes[f"ticket_{idx + 1}_assigned_to"] = ticket.get("ticket_assigned_to", "")
 
         attributes["total_tickets"] = len(self._tickets)
         attributes["displayed_tickets"] = len(limited_tickets)
@@ -1740,6 +1749,83 @@ class ITFlowResolvedTicketsSensor(SensorEntity, RestoreEntity):
 
         except Exception as err:
             _LOGGER.error("Error fetching resolved tickets: %s", err)
+            self._tickets = []
+            self._attr_native_value = 0
+
+
+class ITFlowMaintenanceTicketsSensor(SensorEntity, RestoreEntity):
+    """Sensor that displays all maintenance ITFlow tickets (status 7 only)."""
+
+    def __init__(self, hass, entry_id, title):
+        """Initialize the maintenance tickets sensor."""
+        self.hass = hass
+        self._entry_id = entry_id
+        self._title = title
+        self._attr_name = "ITFlow Maintenance Tickets"
+        self._attr_unique_id = f"{entry_id}_itflow_maintenance_tickets"
+        self._attr_native_value = 0
+        self._tickets = []
+
+    @property
+    def native_value(self):
+        """Return the number of maintenance tickets."""
+        return self._attr_native_value
+
+    @property
+    def extra_state_attributes(self):
+        """Return ticket details as attributes with dynamic size reduction."""
+        return build_ticket_attributes_with_size_check(self._tickets, include_tickets_array=False)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._title)},
+            name=self._title,
+            manufacturer="On-Off",
+            model="ITFlow Integration",
+        )
+
+    async def async_update(self):
+        """Fetch maintenance tickets from ITFlow (status 7 only)."""
+        try:
+            entry_data = self.hass.data.get(DOMAIN, {}).get(self._entry_id)
+            if not entry_data or not isinstance(entry_data, dict):
+                return
+
+            client = entry_data.get("itflow_client")
+            if not client:
+                return
+
+            # Only fetch tickets with status 7 (Maintenance)
+            all_maintenance_tickets = []
+
+            for status in ["7", "Maintenance"]:
+                try:
+                    response = await client.get_tickets(status=status)
+                    if response.get("success"):
+                        tickets = response.get("data", [])
+                        # Only add tickets with status_raw = 7
+                        for ticket in tickets:
+                            ticket_id = ticket.get("ticket_id")
+                            raw_status = str(ticket.get("ticket_status", ""))
+                            if raw_status == "7" and ticket_id and not any(t.get("ticket_id") == ticket_id for t in all_maintenance_tickets):
+                                all_maintenance_tickets.append(ticket)
+                except Exception as e:
+                    _LOGGER.debug("Error fetching tickets with status %s: %s", status, e)
+                    continue
+
+            # Sort by ticket_created_at descending (newest first)
+            all_maintenance_tickets.sort(
+                key=lambda x: x.get("ticket_created_at", ""),
+                reverse=True
+            )
+
+            self._tickets = all_maintenance_tickets
+            self._attr_native_value = len(self._tickets)
+
+        except Exception as err:
+            _LOGGER.error("Error fetching maintenance tickets: %s", err)
             self._tickets = []
             self._attr_native_value = 0
 
